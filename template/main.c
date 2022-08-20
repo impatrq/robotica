@@ -3,6 +3,7 @@
 #include "l298.h"
 #include "infrarojo.h"
 #include "ultrasonico.h"
+#include "bt.h"
 
 /*
  *  @brief  Programa principal
