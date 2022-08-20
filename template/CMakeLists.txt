@@ -24,6 +24,7 @@ pico_sdk_init()
 add_library(libs 
     ${PICO_LIBS}/ultrasonico.c
     ${PICO_LIBS}/l298.c
+    ${PICO_LIBS}/bt.c
 )
 
 # Include header files to library
@@ -52,5 +53,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 target_link_libraries(${PROJECT_NAME} 
     pico_stdlib
     libs
+    hardware_pwm
+    hardware_uart
 )
 pico_add_extra_outputs(${PROJECT_NAME})
