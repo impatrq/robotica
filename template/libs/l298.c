@@ -6,21 +6,20 @@
  *  @param  pin_forwart: numero de pin que controla la direccion de avance
  *  @param  pin_reverse: numero de pin que controla la direccion de reversa
  */
-void motor_init(uint8_t pin_forward, uint8_t pin_reverse) {
+void motor_init(l298_t l298) {
+    /* Habilito salidas */
+    gpio_init_mask(1 << l298.forward | 1 << l298.reverse);
+    gpio_set_dir_out_masked(1 << l298.forward | 1 << l298.reverse);
     /* Seteo pines como PWM */
-    gpio_set_function(pin_forward, GPIO_FUNC_PWM);
-    gpio_set_function(pin_reverse, GPIO_FUNC_PWM);
+    gpio_set_function(l298.en, GPIO_FUNC_PWM);
     /* Consigo los slices de los pines */
-    uint slice_pin_forward = pwm_gpio_to_slice_num(pin_forward);
-    uint slice_pin_reverse = pwm_gpio_to_slice_num(pin_forward);
+    uint slice = pwm_gpio_to_slice_num(l298.en);
     /* Obtengo configuracion por defecto de PWM */
     pwm_config config = pwm_get_default_config();
-    /* Inicializo ambos slices */
-    pwm_init(slice_pin_forward, &config, true);
-    pwm_init(slice_pin_reverse, &config, true);
+    /* Inicializo el slice */
+    pwm_init(slice, &config, true);
     /* Arranco con 0% de ancho de pulso */
-    pwm_set_gpio_level(pin_forward, 0);
-    pwm_set_gpio_level(pin_reverse, 0);
+    pwm_set_gpio_level(l298.en, 0);
 }
 
 /*
@@ -28,11 +27,13 @@ void motor_init(uint8_t pin_forward, uint8_t pin_reverse) {
  *  @param  pin_forwart: numero de pin que controla la direccion de avance
  *  @param  pin_reverse: numero de pin que controla la direccion de reversa
  */
-void motor_forward(uint8_t pin_forward, uint8_t pin_reverse) {
-    /* 0% de ancho de pulso para el pin de reversa */
-    pwm_set_gpio_level(pin_reverse, 0);
-    /* 100% de ancho de pulso para el pin de avance */
-    pwm_set_gpio_level(pin_forward, 0xffff);
+void motor_forward(l298_t l298) {
+    /* Apago el pin de reverse */
+    gpio_put(l298.reverse, false);
+    /* Prendo el pin de forward */
+    gpio_put(l298.forward, true);
+    /* 100% de ancho de pulso para el pin de enable */
+    pwm_set_gpio_level(l298.en, 0xffff);
 }
 
 /*
@@ -40,11 +41,13 @@ void motor_forward(uint8_t pin_forward, uint8_t pin_reverse) {
  *  @param  pin_forwart: numero de pin que controla la direccion de avance
  *  @param  pin_reverse: numero de pin que controla la direccion de reversa
  */
-void motor_reverse(uint8_t pin_forward, uint8_t pin_reverse) {
-    /* 0% de ancho de pulso para el pin de avance */
-    pwm_set_gpio_level(pin_forward, 0);
-    /* 100% de ancho de pulso para el pin de reversa */
-    pwm_set_gpio_level(pin_reverse, 0xffff);
+void motor_reverse(l298_t l298) {
+    /* Apago el pin de forward */
+    gpio_put(l298.forward, false);
+    /* Prendo el pin de reverse */
+    gpio_put(l298.reverse, true);
+    /* 100% de ancho de pulso para el pin de enable */
+    pwm_set_gpio_level(l298.en, 0xffff);
 }
 
 /*
@@ -53,13 +56,15 @@ void motor_reverse(uint8_t pin_forward, uint8_t pin_reverse) {
  *  @param  pin_reverse: numero de pin que controla la direccion de reversa
  *  @param  partial: porcentaje de potencia entregada
  */
-void motor_forward_partial(uint8_t pin_forward, uint8_t pin_reverse, uint8_t partial) {
-    /* 0% de ancho de pulso para el pin de reversa */
-    pwm_set_gpio_level(pin_reverse, 0);
+void motor_forward_partial(l298_t l298, uint8_t partial) {
+    /* Apago el pin de reverse */
+    gpio_put(l298.reverse, false);
+    /* Prendo el pin de forward */
+    gpio_put(l298.forward, true);
     /* Calculo el valor de duty necesario */
     uint16_t duty = (uint32_t)partial * 0xffff / 100.0;
     /* Porcentaje de ancho de pulso indicado para el pin de avance */
-    pwm_set_gpio_level(pin_forward, duty);
+    pwm_set_gpio_level(l298.en, duty);
 }
 
 /*
@@ -68,11 +73,13 @@ void motor_forward_partial(uint8_t pin_forward, uint8_t pin_reverse, uint8_t par
  *  @param  pin_reverse: numero de pin que controla la direccion de reversa
  *  @param  partial: porcentaje de potencia entregada
  */
-void motor_reverse_partial(uint8_t pin_forward, uint8_t pin_reverse, uint8_t partial) {
-    /* 0% de ancho de pulso para el pin de avance */
-    pwm_set_gpio_level(pin_forward, 0);
+void motor_reverse_partial(l298_t l298, uint8_t partial) {
+    /* Apago el pin de forward */
+    gpio_put(l298.forward, false);
+    /* Prendo el pin de reverse */
+    gpio_put(l298.reverse, true);
     /* Calculo el valor de duty necesario */
     uint16_t duty = (uint32_t)partial * 0xffff / 100.0;
     /* Porcentaje de ancho de pulso indicado para el pin de reversa */
-    pwm_set_gpio_level(pin_reverse, duty);
+    pwm_set_gpio_level(l298.en, duty);
 }
